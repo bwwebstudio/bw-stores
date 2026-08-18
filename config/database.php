@@ -5,11 +5,11 @@
  */
 
 return [
-    'host'     => $_ENV['DB_HOST'] ?? '127.0.0.1',
-    'port'     => $_ENV['DB_PORT'] ?? '3306',
-    'name'     => $_ENV['DB_NAME'] ?? 'bw_store',
-    'user'     => $_ENV['DB_USER'] ?? 'root',
-    'password' => $_ENV['DB_PASSWORD'] ?? '',
+    'host'     => $_ENV['DB_HOST'] ?? $_ENV['MYSQLHOST'] ?? '127.0.0.1',
+    'port'     => $_ENV['DB_PORT'] ?? $_ENV['MYSQLPORT'] ?? '3306',
+    'name'     => $_ENV['DB_NAME'] ?? $_ENV['MYSQLDATABASE'] ?? 'bw_store',
+    'user'     => $_ENV['DB_USER'] ?? $_ENV['MYSQLUSER'] ?? 'root',
+    'password' => $_ENV['DB_PASSWORD'] ?? $_ENV['MYSQLPASSWORD'] ?? '',
     'charset'  => 'utf8mb4',
     'collation' => 'utf8mb4_unicode_ci',
     
