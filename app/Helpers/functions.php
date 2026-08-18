@@ -12,6 +12,24 @@ use App\Core\Response;
 use App\Core\View;
 
 /**
+ * Get an environment variable with fallback to getenv().
+ */
+function env(string $key, mixed $default = null): mixed
+{
+    $val = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+    if ($val === false || $val === null || $val === '') {
+        return $default;
+    }
+    $lower = strtolower(trim((string)$val));
+    if ($lower === 'true' || $lower === '(true)') return true;
+    if ($lower === 'false' || $lower === '(false)') return false;
+    if ($lower === 'empty' || $lower === '(empty)') return '';
+    if ($lower === 'null' || $lower === '(null)') return null;
+
+    return $val;
+}
+
+/**
  * Get a configuration value.
  */
 function config(string $key, mixed $default = null): mixed
@@ -43,7 +61,12 @@ function db(): App\Core\Database
 function url(string $path = ''): string
 {
     if (!empty($_SERVER['HTTP_HOST'])) {
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $scheme = 'http';
+        if ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+            (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+            (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')) {
+            $scheme = 'https';
+        }
         $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'];
     } else {
         $baseUrl = rtrim(config('app.url', 'http://localhost:8000'), '/');

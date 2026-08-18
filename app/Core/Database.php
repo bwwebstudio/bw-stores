@@ -42,20 +42,65 @@ class Database
      */
     private function connect(): void
     {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%s;dbname=%s;charset=%s',
-            $this->config['host'],
-            $this->config['port'],
-            $this->config['name'],
-            $this->config['charset']
-        );
+        try {
+            $dsn = sprintf(
+                'mysql:host=%s;port=%s;dbname=%s;charset=%s',
+                $this->config['host'],
+                $this->config['port'],
+                $this->config['name'],
+                $this->config['charset']
+            );
 
-        $this->pdo = new \PDO(
-            $dsn,
-            $this->config['user'],
-            $this->config['password'],
-            $this->config['options']
-        );
+            $this->pdo = new \PDO(
+                $dsn,
+                $this->config['user'],
+                $this->config['password'],
+                $this->config['options']
+            );
+        } catch (\PDOException $e) {
+            // If unknown database error (1049), try to connect without dbname and create it
+            if ($e->getCode() == 1049 || str_contains($e->getMessage(), 'Unknown database')) {
+                $dsnWithoutDb = sprintf(
+                    'mysql:host=%s;port=%s;charset=%s',
+                    $this->config['host'],
+                    $this->config['port'],
+                    $this->config['charset']
+                );
+                $this->pdo = new \PDO(
+                    $dsnWithoutDb,
+                    $this->config['user'],
+                    $this->config['password'],
+                    $this->config['options']
+                );
+                $dbName = $this->config['name'];
+                $this->pdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                $this->pdo->exec("USE `{$dbName}`");
+            } else {
+                throw $e;
+            }
+        }
+
+        // Auto-initialize schema if users table does not exist
+        $this->ensureSchema();
+    }
+
+    /**
+     * Auto-initialize tables from schema.sql if empty
+     */
+    private function ensureSchema(): void
+    {
+        try {
+            $stmt = $this->pdo->query("SHOW TABLES LIKE 'users'");
+            if (!$stmt->fetch()) {
+                $schemaFile = defined('BASE_PATH') ? BASE_PATH . '/database/schema.sql' : dirname(__DIR__, 2) . '/database/schema.sql';
+                if (file_exists($schemaFile)) {
+                    $sql = file_get_contents($schemaFile);
+                    $this->pdo->exec($sql);
+                }
+            }
+        } catch (\Throwable $t) {
+            // Don't interrupt if schema check fails
+        }
     }
 
     /**

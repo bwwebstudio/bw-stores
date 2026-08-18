@@ -5,13 +5,13 @@
  */
 
 return [
-    'host'       => $_ENV['MAIL_HOST'] ?? '',
-    'port'       => (int) ($_ENV['MAIL_PORT'] ?? 587),
-    'username'   => $_ENV['MAIL_USERNAME'] ?? '',
-    'password'   => $_ENV['MAIL_PASSWORD'] ?? '',
-    'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
+    'host'       => env('MAIL_HOST', ''),
+    'port'       => (int) env('MAIL_PORT', 587),
+    'username'   => env('MAIL_USERNAME', ''),
+    'password'   => env('MAIL_PASSWORD', ''),
+    'encryption' => env('MAIL_ENCRYPTION', 'tls'),
     'from' => [
-        'address' => $_ENV['MAIL_FROM_ADDRESS'] ?? 'noreply@example.com',
-        'name'    => $_ENV['MAIL_FROM_NAME'] ?? 'BW Store',
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@example.com'),
+        'name'    => env('MAIL_FROM_NAME', 'BW Store'),
     ],
 ];

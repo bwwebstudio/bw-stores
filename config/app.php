@@ -5,12 +5,12 @@
  */
 
 return [
-    'name'     => $_ENV['APP_NAME'] ?? 'BW Store',
-    'env'      => $_ENV['APP_ENV'] ?? 'production',
-    'url'      => $_ENV['APP_URL'] ?? 'http://localhost',
-    'debug'    => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
-    'timezone' => $_ENV['APP_TIMEZONE'] ?? 'Asia/Kolkata',
-    'key'      => $_ENV['APP_KEY'] ?? '',
+    'name'     => env('APP_NAME', 'BW Store'),
+    'env'      => env('APP_ENV', 'production'),
+    'url'      => env('APP_URL', 'http://localhost'),
+    'debug'    => (bool) env('APP_DEBUG', true),
+    'timezone' => env('APP_TIMEZONE', 'Asia/Kolkata'),
+    'key'      => env('APP_KEY', 'bw_store_secret_2026_key'),
     
     // Brand
     'brand' => [
