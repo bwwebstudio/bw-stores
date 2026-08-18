@@ -1,0 +1,152 @@
+/* ==========================================================================
+   BW Store — Super Admin Executive Portal Stylesheet
+   Dark Luxury Modern Tech Aesthetic (Linear / Supabase / Vercel Tier)
+   ========================================================================== */
+
+/* ---------- Dark Executive Sidebar ---------- */
+.admin-sidebar {
+    background: #0B0F19 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+}
+
+.admin-sidebar .sidebar-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.admin-sidebar .bw-logo .logo-text {
+    color: #FFFFFF;
+}
+
+.admin-sidebar .nav-section {
+    color: #64748B;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.admin-sidebar .nav-item {
+    color: #94A3B8;
+    border-radius: var(--radius-md);
+    margin: 2px 0;
+    transition: all var(--transition-fast);
+}
+
+.admin-sidebar .nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #FFFFFF;
+    transform: translateX(3px);
+}
+
+.admin-sidebar .nav-item.active {
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.25) 0%, rgba(124, 58, 237, 0.15) 100%);
+    color: #60A5FA;
+    font-weight: 700;
+    border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.admin-sidebar .nav-item.active::before {
+    background: #60A5FA;
+    box-shadow: 0 0 10px #60A5FA;
+}
+
+.admin-sidebar .nav-item .nav-icon {
+    color: #64748B;
+}
+
+.admin-sidebar .nav-item:hover .nav-icon,
+.admin-sidebar .nav-item.active .nav-icon {
+    color: #60A5FA;
+}
+
+.admin-sidebar .sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: #070A10;
+}
+
+.admin-sidebar .user-name {
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+.admin-sidebar .user-email {
+    color: #64748B;
+}
+
+/* Super Admin Badge Pill */
+.admin-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    background: rgba(239, 68, 68, 0.15);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-full);
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+/* Admin Top Bar */
+.admin-topbar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid #E2E8F0;
+}
+
+/* Admin Stat Highlights */
+.admin-stat-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    transition: all var(--transition);
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px -4px rgba(15, 23, 42, 0.1);
+    border-color: #93C5FD;
+}
+
+.admin-stat-card .admin-stat-glow {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    filter: blur(25px);
+    opacity: 0.35;
+}
+
+.glow-blue { background: #2563EB; }
+.glow-emerald { background: #10B981; }
+.glow-purple { background: #7C3AED; }
+.glow-amber { background: #F59E0B; }
+
+/* Admin Activity & Audit Badges */
+.badge-admin-role {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+}
+
+.badge-merchant-role {
+    background: #F0FDF4;
+    color: #15803D;
+    border: 1px solid #BBF7D0;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+}

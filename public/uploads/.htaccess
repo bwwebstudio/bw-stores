@@ -1,0 +1,12 @@
+# Block all PHP execution in upload directory
+# This prevents uploaded files from being executed as PHP
+
+<FilesMatch "\.php$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Disable script execution
+Options -ExecCGI
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .phps .pht .phar
+AddType text/plain .php .phtml .php3 .php4 .php5 .php7 .phps .pht .phar
