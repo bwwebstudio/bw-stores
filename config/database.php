@@ -15,10 +15,10 @@ $user = env('DB_USER', env('MYSQLUSER'));
 $password = env('DB_PASSWORD', env('MYSQLPASSWORD'));
 
 // If individual vars were not present, extract from URL string
-if (empty($host) || empty($user)) {
-    $dbUrl = env('MYSQL_URL', env('MYSQL_PRIVATE_URL', env('MYSQL_PUBLIC_URL', env('DATABASE_URL'))));
+if (empty($host) || empty($user) || empty($name)) {
+    $dbUrl = env('MYSQL_URL', env('MYSQL_PRIVATE_URL', env('MYSQL_PUBLIC_URL', env('DATABASE_URL', env('DATABASE_PUBLIC_URL', env('DATABASE_PRIVATE_URL', env('DB_URL')))))));
     if (!empty($dbUrl)) {
-        if (preg_match('|^mysql://([^:]+):(.*)@([^:/]+)(?::(\d+))?/(.+)$|', $dbUrl, $matches)) {
+        if (preg_match('|^mysqls?://([^:]+):(.*)@([^:/]+)(?::(\d+))?/(.+)$|', $dbUrl, $matches)) {
             $user = urldecode($matches[1]);
             $password = urldecode($matches[2]);
             $host = $matches[3];
@@ -28,7 +28,7 @@ if (empty($host) || empty($user)) {
             $parsedUrl = parse_url($dbUrl);
             if (!empty($parsedUrl['host'])) $host = $parsedUrl['host'];
             if (!empty($parsedUrl['port'])) $port = (string) $parsedUrl['port'];
-            if (!empty($parsedUrl['path'])) $name = ltrim($parsedUrl['path'], '/');
+            if (!empty($parsedUrl['path'])) $name = ltrim(explode('?', $parsedUrl['path'])[0], '/');
             if (!empty($parsedUrl['user'])) $user = urldecode($parsedUrl['user']);
             if (isset($parsedUrl['pass'])) $password = urldecode($parsedUrl['pass']);
         }
@@ -36,10 +36,10 @@ if (empty($host) || empty($user)) {
 }
 
 // Fallbacks for local development
-$host = $host ?: '127.0.0.1';
-$port = $port ?: '3306';
-$name = $name ?: 'bw_store';
-$user = $user ?: 'root';
+$host = !empty($host) ? $host : '127.0.0.1';
+$port = !empty($port) ? (string)$port : '3306';
+$name = !empty($name) ? $name : 'bw_store';
+$user = !empty($user) ? $user : 'root';
 $password = $password !== null ? $password : '';
 
 return [

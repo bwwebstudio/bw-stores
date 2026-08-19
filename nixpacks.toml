@@ -1,0 +1,25 @@
+[phases.setup]
+nixPkgs = [
+    "php82",
+    "php82Extensions.pdo",
+    "php82Extensions.pdo_mysql",
+    "php82Extensions.gd",
+    "php82Extensions.zip",
+    "php82Extensions.curl",
+    "php82Extensions.mbstring",
+    "php82Extensions.bcmath",
+    "php82Extensions.opcache",
+    "composer"
+]
+
+[phases.install]
+cmds = ["composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs"]
+
+[phases.build]
+cmds = [
+    "mkdir -p storage/logs storage/cache storage/sessions public/uploads",
+    "chmod -R 777 storage public/uploads 2>/dev/null || true"
+]
+
+[start]
+cmd = "bash start.sh"
