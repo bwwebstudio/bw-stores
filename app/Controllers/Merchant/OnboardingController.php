@@ -139,7 +139,7 @@ class OnboardingController extends Controller
                 'name'        => $storeName,
                 'slug'        => $storeSlug,
                 'logo'        => $logoPath,
-                'status'      => 'pending',
+                'status'      => 'active',
             ]);
         }
 

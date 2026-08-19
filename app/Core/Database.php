@@ -225,6 +225,9 @@ class Database
                      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
              ");
+
+             // 9. Ensure stores.status ENUM includes all valid status values
+             $this->pdo->exec("ALTER TABLE `stores` MODIFY COLUMN `status` ENUM('active', 'pending', 'suspended', 'maintenance', 'inactive') NOT NULL DEFAULT 'active'");
          } catch (\Throwable $t) {
              // Non-critical background repair
          }

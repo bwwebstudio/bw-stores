@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `stores` (
     `logo` VARCHAR(500) NULL,
     `favicon` VARCHAR(500) NULL,
     `description` TEXT NULL,
-    `status` ENUM('active', 'suspended') NOT NULL DEFAULT 'active',
+    `status` ENUM('active', 'pending', 'suspended', 'maintenance', 'inactive') NOT NULL DEFAULT 'active',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE
