@@ -85,23 +85,143 @@ class Database
     }
 
     /**
-     * Auto-initialize tables from schema.sql if empty
+     * Auto-initialize tables from schema.sql if empty, or repair legacy column names
      */
-    private function ensureSchema(): void
-    {
-        try {
-            $stmt = $this->pdo->query("SHOW TABLES LIKE 'users'");
-            if (!$stmt->fetch()) {
-                $schemaFile = defined('BASE_PATH') ? BASE_PATH . '/database/schema.sql' : dirname(__DIR__, 2) . '/database/schema.sql';
-                if (file_exists($schemaFile)) {
-                    $sql = file_get_contents($schemaFile);
-                    $this->pdo->exec($sql);
-                }
-            }
-        } catch (\Throwable $t) {
-            // Don't interrupt if schema check fails
-        }
-    }
+     private function ensureSchema(): void
+     {
+         try {
+             $stmt = $this->pdo->query("SHOW TABLES LIKE 'users'");
+             $usersExist = (bool)$stmt->fetch();
+
+             $stmtPlans = $this->pdo->query("SHOW TABLES LIKE 'plans'");
+             $plansExist = (bool)$stmtPlans->fetch();
+
+             if (!$usersExist || !$plansExist) {
+                 $schemaFile = defined('BASE_PATH') ? BASE_PATH . '/database/schema.sql' : dirname(__DIR__, 2) . '/database/schema.sql';
+                 if (file_exists($schemaFile)) {
+                     $sql = file_get_contents($schemaFile);
+                     $this->executeSqlScript($sql);
+                 }
+             } else {
+                 // Ensure default plans exist
+                 $planCount = (int)$this->fetchColumn("SELECT COUNT(*) FROM plans");
+                 if ($planCount === 0) {
+                     $seederFile = defined('BASE_PATH') ? BASE_PATH . '/database/seeders/001_PlanSeeder.php' : dirname(__DIR__, 2) . '/database/seeders/001_PlanSeeder.php';
+                     if (file_exists($seederFile)) {
+                         $seeder = require $seederFile;
+                         if (is_callable($seeder)) {
+                             $seeder($this->pdo);
+                         }
+                     }
+                 }
+
+                 // Fix any legacy column mismatches if tables were created with an older schema
+                 $this->fixLegacyColumns();
+             }
+         } catch (\Throwable $t) {
+             if (function_exists('app_log')) {
+                 app_log("ensureSchema note: " . $t->getMessage(), 'INFO');
+             }
+         }
+     }
+
+     /**
+      * Automatically fix legacy column names and ENUMs if tables already existed
+      */
+     private function fixLegacyColumns(): void
+     {
+         try {
+             // 1. Fix users.verification_token
+             $cols = $this->pdo->query("SHOW COLUMNS FROM `users` LIKE 'verification_token'")->fetchAll();
+             if (empty($cols)) {
+                 $hasOld = $this->pdo->query("SHOW COLUMNS FROM `users` LIKE 'email_verify_token'")->fetchAll();
+                 if (!empty($hasOld)) {
+                     $this->pdo->exec("ALTER TABLE `users` CHANGE `email_verify_token` `verification_token` VARCHAR(64) NULL");
+                 } else {
+                     $this->pdo->exec("ALTER TABLE `users` ADD COLUMN `verification_token` VARCHAR(64) NULL AFTER `email_verified_at`");
+                 }
+             }
+
+             // 2. Fix users.reset_token
+             $colsReset = $this->pdo->query("SHOW COLUMNS FROM `users` LIKE 'reset_token'")->fetchAll();
+             if (empty($colsReset)) {
+                 $hasOld = $this->pdo->query("SHOW COLUMNS FROM `users` LIKE 'password_reset_token'")->fetchAll();
+                 if (!empty($hasOld)) {
+                     $this->pdo->exec("ALTER TABLE `users` CHANGE `password_reset_token` `reset_token` VARCHAR(64) NULL");
+                 } else {
+                     $this->pdo->exec("ALTER TABLE `users` ADD COLUMN `reset_token` VARCHAR(64) NULL AFTER `verification_token`");
+                 }
+             }
+
+             // 3. Fix users.reset_token_expires
+             $colsResetExp = $this->pdo->query("SHOW COLUMNS FROM `users` LIKE 'reset_token_expires'")->fetchAll();
+             if (empty($colsResetExp)) {
+                 $hasOld = $this->pdo->query("SHOW COLUMNS FROM `users` LIKE 'password_reset_expires_at'")->fetchAll();
+                 if (!empty($hasOld)) {
+                     $this->pdo->exec("ALTER TABLE `users` CHANGE `password_reset_expires_at` `reset_token_expires` DATETIME NULL");
+                 } else {
+                     $this->pdo->exec("ALTER TABLE `users` ADD COLUMN `reset_token_expires` DATETIME NULL AFTER `reset_token`");
+                 }
+             }
+
+             // 4. Fix users.login_attempts
+             $colsAttempts = $this->pdo->query("SHOW COLUMNS FROM `users` LIKE 'login_attempts'")->fetchAll();
+             if (empty($colsAttempts)) {
+                 $hasOld = $this->pdo->query("SHOW COLUMNS FROM `users` LIKE 'failed_logins'")->fetchAll();
+                 if (!empty($hasOld)) {
+                     $this->pdo->exec("ALTER TABLE `users` CHANGE `failed_logins` `login_attempts` INT NOT NULL DEFAULT 0");
+                 } else {
+                     $this->pdo->exec("ALTER TABLE `users` ADD COLUMN `login_attempts` INT NOT NULL DEFAULT 0");
+                 }
+             }
+
+             // 5. Ensure subscriptions.status ENUM includes 'trialing'
+             $this->pdo->exec("ALTER TABLE `subscriptions` MODIFY COLUMN `status` ENUM('pending', 'active', 'trialing', 'past_due', 'grace_period', 'cancelled', 'canceled', 'expired', 'suspended') NOT NULL DEFAULT 'pending'");
+         } catch (\Throwable $t) {
+             // Non-critical background repair
+         }
+     }
+
+     /**
+      * Execute a multi-statement SQL script safely
+      */
+     public function executeSqlScript(string $sql): void
+     {
+         try {
+             $this->pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+         } catch (\Throwable $e) {}
+
+         // Try full execution first
+         try {
+             $this->pdo->exec($sql);
+         } catch (\Throwable $e) {
+             // Split statements by semicolon
+             $lines = explode("\n", $sql);
+             $currentStmt = '';
+             foreach ($lines as $line) {
+                 $trimmed = trim($line);
+                 if (empty($trimmed) || str_starts_with($trimmed, '--') || str_starts_with($trimmed, '#')) {
+                     continue;
+                 }
+                 $currentStmt .= ' ' . $line;
+                 if (str_ends_with($trimmed, ';')) {
+                     $stmtToRun = trim($currentStmt);
+                     $currentStmt = '';
+                     if (!empty($stmtToRun)) {
+                         try {
+                             $this->pdo->exec($stmtToRun);
+                         } catch (\Throwable $se) {
+                             // Ignore duplicate table/column or non-fatal statement errors
+                         }
+                     }
+                 }
+             }
+         }
+
+         try {
+             $this->pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+         } catch (\Throwable $e) {}
+     }
 
     /**
      * Get the raw PDO instance.

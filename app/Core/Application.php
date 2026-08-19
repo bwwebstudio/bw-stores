@@ -132,12 +132,13 @@ class Application
             BASE_PATH . '/storage/logs',
             BASE_PATH . '/storage/cache',
             BASE_PATH . '/storage/cache/rate_limits',
+            BASE_PATH . '/storage/framework/sessions',
             BASE_PATH . '/public/uploads',
         ];
 
         foreach ($dirs as $dir) {
             if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
+                @mkdir($dir, 0775, true);
             }
         }
     }

@@ -59,8 +59,30 @@ class AuthService
                 ]);
 
                 // Create 7-Day Free Trial on Growth Plan (id: 2)
-                $plan = $db->fetchOne("SELECT id FROM plans WHERE slug = 'growth'") ?: ['id' => 2];
-                $planId = (int)($plan['id'] ?? 2);
+                $plan = $db->fetchOne("SELECT id FROM plans WHERE slug = 'growth'") ?: $db->fetchOne("SELECT id FROM plans ORDER BY id ASC LIMIT 1");
+                if (!$plan) {
+                    $planId = $db->insert('plans', [
+                        'id'               => 2,
+                        'name'             => 'BW Store Growth',
+                        'slug'             => 'growth',
+                        'price'            => 999.00,
+                        'yearly_price'     => 11788.00,
+                        'yearly_discount'  => 200.00,
+                        'currency'         => 'INR',
+                        'billing_interval' => 'monthly',
+                        'badge'            => 'Recommended',
+                        'description'      => 'The complete powerhouse solution for ambitious brands scaling their revenue rapidly.',
+                        'features'         => json_encode(["Unlimited Products & Categories", "All 3 Premium Storefront Themes", "Advanced Real-Time Sales Analytics", "Inventory Tracking & Low Stock Alerts", "Coupons & Dynamic Discount Engine", "Direct Razorpay Connect + UPI + COD", "Priority Email & Ticket Support", "0% Platform Sales Commission"]),
+                        'max_products'     => 0,
+                        'max_themes'       => 3,
+                        'priority_support' => 1,
+                        'trial_days'       => 7,
+                        'is_active'        => 1,
+                    ]);
+                } else {
+                    $planId = (int)$plan['id'];
+                }
+
                 $now = date('Y-m-d H:i:s');
                 $trialEnd = date('Y-m-d H:i:s', strtotime('+7 days'));
 
@@ -74,13 +96,17 @@ class AuthService
                 ]);
 
                 // Welcome Notification
-                $db->insert('notifications', [
-                    'merchant_id' => $merchantId,
-                    'title'       => '🎉 Welcome to Your 7-Day Free Trial!',
-                    'message'     => 'Your 7-Day Free Trial on BW Store Growth is now active. Set up your store, add products, and start selling with 0% commission!',
-                    'type'        => 'success',
-                    'link'        => url('dashboard/onboarding'),
-                ]);
+                try {
+                    $db->insert('notifications', [
+                        'merchant_id' => $merchantId,
+                        'title'       => '🎉 Welcome to Your 7-Day Free Trial!',
+                        'message'     => 'Your 7-Day Free Trial on BW Store Growth is now active. Set up your store, add products, and start selling with 0% commission!',
+                        'type'        => 'success',
+                        'link'        => url('dashboard/onboarding'),
+                    ]);
+                } catch (\Throwable $ne) {
+                    app_log("Failed to insert welcome notification: " . $ne->getMessage(), 'WARNING');
+                }
 
                 // Get the created user for the verification token
                 $user = $this->userModel->findById($userId);
@@ -94,8 +120,12 @@ class AuthService
                 }
 
                 // Log the registration
-                $auditService = new AuditService();
-                $auditService->log('user_registered', 'user', $userId, "New merchant registered with 7-day trial: {$data['email']}");
+                try {
+                    $auditService = new AuditService();
+                    $auditService->log('user_registered', 'user', $userId, "New merchant registered with 7-day trial: {$data['email']}");
+                } catch (\Throwable $ae) {
+                    app_log("Failed to log audit event: " . $ae->getMessage(), 'WARNING');
+                }
 
                 return [
                     'success'     => true,
@@ -104,10 +134,17 @@ class AuthService
                 ];
             });
         } catch (\Throwable $e) {
-            app_log("Registration failed for {$data['email']}: " . $e->getMessage(), 'ERROR');
+            $errorMessage = $e->getMessage();
+            app_log("Registration failed for {$data['email']}: {$errorMessage}\n" . $e->getTraceAsString(), 'ERROR');
+            
+            $debug = config('app.debug', false);
+            $generalError = $debug 
+                ? 'Registration failed: ' . $errorMessage 
+                : 'Registration failed. Please try again.';
+
             return [
                 'success' => false,
-                'errors'  => ['general' => 'Registration failed. Please try again.'],
+                'errors'  => ['general' => $generalError],
             ];
         }
     }

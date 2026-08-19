@@ -1,5 +1,5 @@
 -- BW Store SaaS - Complete Production Database Schema
--- Ready for Import into MySQL / phpMyAdmin (InfinityFree, cPanel, VPS)
+-- Ready for Import into MySQL / phpMyAdmin (InfinityFree, cPanel, VPS, Railway)
 
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -12,16 +12,19 @@ CREATE TABLE IF NOT EXISTS `users` (
     `mobile` VARCHAR(20) NULL,
     `role` ENUM('admin', 'merchant') NOT NULL DEFAULT 'merchant',
     `email_verified_at` TIMESTAMP NULL,
-    `email_verify_token` VARCHAR(64) NULL,
-    `password_reset_token` VARCHAR(64) NULL,
-    `password_reset_expires_at` TIMESTAMP NULL,
-    `failed_logins` INT NOT NULL DEFAULT 0,
+    `verification_token` VARCHAR(64) NULL,
+    `reset_token` VARCHAR(64) NULL,
+    `reset_token_expires` TIMESTAMP NULL,
+    `login_attempts` INT NOT NULL DEFAULT 0,
     `locked_until` TIMESTAMP NULL,
     `last_login_at` TIMESTAMP NULL,
     `last_login_ip` VARCHAR(45) NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_users_verification_token` (`verification_token`),
+    INDEX `idx_users_reset_token` (`reset_token`),
+    INDEX `idx_users_role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Merchants
@@ -81,9 +84,12 @@ CREATE TABLE IF NOT EXISTS `subscriptions` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `merchant_id` INT NOT NULL,
     `plan_id` INT NOT NULL,
-    `status` ENUM('active', 'past_due', 'canceled', 'trialing') NOT NULL DEFAULT 'active',
-    `current_period_start` TIMESTAMP NOT NULL,
-    `current_period_end` TIMESTAMP NOT NULL,
+    `status` ENUM('pending', 'active', 'trialing', 'past_due', 'grace_period', 'cancelled', 'canceled', 'expired', 'suspended') NOT NULL DEFAULT 'pending',
+    `gateway_subscription_id` VARCHAR(255) NULL,
+    `current_period_start` TIMESTAMP NULL,
+    `current_period_end` TIMESTAMP NULL,
+    `trial_ends_at` TIMESTAMP NULL,
+    `cancelled_at` TIMESTAMP NULL,
     `expires_at` TIMESTAMP NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

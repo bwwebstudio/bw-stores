@@ -26,6 +26,21 @@ class Session
             return;
         }
 
+        // Ensure session save directory exists and is used
+        if (defined('BASE_PATH')) {
+            $sessDir = BASE_PATH . '/storage/framework/sessions';
+            if (!is_dir($sessDir)) {
+                @mkdir($sessDir, 0775, true);
+            }
+            if (is_dir($sessDir) && is_writable($sessDir)) {
+                session_save_path($sessDir);
+            }
+        }
+
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+            || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
+
         // Configure session cookie parameters safely
         $cookieParams = [
             'lifetime' => (int)($this->config['lifetime'] ?? 120) * 60,

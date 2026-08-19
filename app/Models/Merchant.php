@@ -44,7 +44,7 @@ class Merchant
             'user_id'           => $data['user_id'],
             'business_name'     => $data['business_name'] ?? null,
             'business_category' => $data['business_category'] ?? null,
-            'status'            => 'pending',
+            'status'            => $data['status'] ?? 'pending',
         ]);
     }
 

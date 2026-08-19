@@ -20,23 +20,38 @@ $config = require BASE_PATH . '/config/database.php';
 // Connect to database
 try {
     $dsn = sprintf(
-        'mysql:host=%s;port=%s;charset=%s',
+        'mysql:host=%s;port=%s;dbname=%s;charset=%s',
         $config['host'],
         $config['port'],
+        $config['name'],
         $config['charset']
     );
 
     $pdo = new PDO($dsn, $config['user'], $config['password'], $config['options']);
-
-    // Create database if it doesn't exist
-    $dbName = $config['name'];
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    $pdo->exec("USE `{$dbName}`");
-
-    echo "✓ Connected to database: {$dbName}\n";
+    echo "✓ Connected to database: {$config['name']}\n";
 } catch (PDOException $e) {
-    echo "✗ Database connection failed: " . $e->getMessage() . "\n";
-    exit(1);
+    // If unknown database error (1049), try to connect without dbname and create it
+    if ($e->getCode() == 1049 || str_contains($e->getMessage(), 'Unknown database')) {
+        try {
+            $dsnWithoutDb = sprintf(
+                'mysql:host=%s;port=%s;charset=%s',
+                $config['host'],
+                $config['port'],
+                $config['charset']
+            );
+            $pdo = new PDO($dsnWithoutDb, $config['user'], $config['password'], $config['options']);
+            $dbName = $config['name'];
+            $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            $pdo->exec("USE `{$dbName}`");
+            echo "✓ Created and connected to database: {$dbName}\n";
+        } catch (PDOException $e2) {
+            echo "✗ Database connection failed: " . $e2->getMessage() . "\n";
+            exit(1);
+        }
+    } else {
+        echo "✗ Database connection failed: " . $e->getMessage() . "\n";
+        exit(1);
+    }
 }
 
 // Create migrations tracking table

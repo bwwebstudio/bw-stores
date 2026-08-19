@@ -10,7 +10,7 @@ return [
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             merchant_id INT UNSIGNED NOT NULL,
             plan_id INT UNSIGNED NOT NULL,
-            status ENUM('pending', 'active', 'past_due', 'grace_period', 'cancelled', 'expired', 'suspended') NOT NULL DEFAULT 'pending',
+            status ENUM('pending', 'active', 'trialing', 'past_due', 'grace_period', 'cancelled', 'canceled', 'expired', 'suspended') NOT NULL DEFAULT 'pending',
             gateway_subscription_id VARCHAR(255) NULL,
             current_period_start DATETIME NULL,
             current_period_end DATETIME NULL,
