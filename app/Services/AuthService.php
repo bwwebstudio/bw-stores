@@ -35,13 +35,13 @@ class AuthService
      */
     public function register(array $data): array
     {
-        // Validate input
-        $errors = $this->validateRegistration($data);
-        if (!empty($errors)) {
-            return ['success' => false, 'errors' => $errors];
-        }
-
         try {
+            // Validate input inside try-catch to catch database errors during validation
+            $errors = $this->validateRegistration($data);
+            if (!empty($errors)) {
+                return ['success' => false, 'errors' => $errors];
+            }
+
             return $this->db->transaction(function (Database $db) use ($data) {
                 // Create user
                 $userId = $this->userModel->create([
@@ -135,16 +135,11 @@ class AuthService
             });
         } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
-            app_log("Registration failed for {$data['email']}: {$errorMessage}\n" . $e->getTraceAsString(), 'ERROR');
-            
-            $debug = config('app.debug', false);
-            $generalError = $debug 
-                ? 'Registration failed: ' . $errorMessage 
-                : 'Registration failed. Please try again.';
+            app_log("Registration failed for " . ($data['email'] ?? 'unknown') . ": {$errorMessage}\n" . $e->getTraceAsString(), 'ERROR');
 
             return [
                 'success' => false,
-                'errors'  => ['general' => $generalError],
+                'errors'  => ['general' => 'Registration error: ' . $errorMessage],
             ];
         }
     }

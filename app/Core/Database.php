@@ -177,6 +177,54 @@ class Database
 
              // 5. Ensure subscriptions.status ENUM includes 'trialing'
              $this->pdo->exec("ALTER TABLE `subscriptions` MODIFY COLUMN `status` ENUM('pending', 'active', 'trialing', 'past_due', 'grace_period', 'cancelled', 'canceled', 'expired', 'suspended') NOT NULL DEFAULT 'pending'");
+
+             // 6. Ensure audit_logs table exists
+             $this->pdo->exec("
+                 CREATE TABLE IF NOT EXISTS `audit_logs` (
+                     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+                     `user_id` INT NULL,
+                     `action` VARCHAR(100) NOT NULL,
+                     `entity_type` VARCHAR(50) NULL,
+                     `entity_id` INT NULL,
+                     `description` TEXT NULL,
+                     `ip_address` VARCHAR(45) NULL,
+                     `user_agent` VARCHAR(500) NULL,
+                     `old_values` LONGTEXT NULL,
+                     `new_values` LONGTEXT NULL,
+                     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                     INDEX `idx_audit_user` (`user_id`),
+                     INDEX `idx_audit_action` (`action`)
+                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+             ");
+
+             // 7. Ensure payments table exists
+             $this->pdo->exec("
+                 CREATE TABLE IF NOT EXISTS `payments` (
+                     `id` INT AUTO_INCREMENT PRIMARY KEY,
+                     `merchant_id` INT NOT NULL,
+                     `order_id` INT NOT NULL,
+                     `amount` DECIMAL(10,2) NOT NULL,
+                     `currency` VARCHAR(3) NOT NULL DEFAULT 'INR',
+                     `status` ENUM('pending', 'paid', 'failed', 'refunded') NOT NULL DEFAULT 'pending',
+                     `gateway` VARCHAR(50) NOT NULL DEFAULT 'COD',
+                     `gateway_payment_id` VARCHAR(255) NULL,
+                     `gateway_response` LONGTEXT NULL,
+                     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+             ");
+
+             // 8. Ensure coupon_usages table exists
+             $this->pdo->exec("
+                 CREATE TABLE IF NOT EXISTS `coupon_usages` (
+                     `id` INT AUTO_INCREMENT PRIMARY KEY,
+                     `coupon_id` INT NOT NULL,
+                     `order_id` INT NOT NULL,
+                     `merchant_id` INT NOT NULL,
+                     `customer_email` VARCHAR(255) NOT NULL,
+                     `discount_amount` DECIMAL(10,2) NOT NULL,
+                     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+             ");
          } catch (\Throwable $t) {
              // Non-critical background repair
          }

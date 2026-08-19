@@ -8,22 +8,39 @@
  *  MYSQL_PRIVATE_URL, MYSQL_PUBLIC_URL, DATABASE_URL).
  */
 
-$host = env('DB_HOST', env('MYSQLHOST', '127.0.0.1'));
-$port = env('DB_PORT', env('MYSQLPORT', '3306'));
-$name = env('DB_NAME', env('MYSQLDATABASE', 'bw_store'));
-$user = env('DB_USER', env('MYSQLUSER', 'root'));
-$password = env('DB_PASSWORD', env('MYSQLPASSWORD', ''));
+$host = env('DB_HOST', env('MYSQLHOST'));
+$port = env('DB_PORT', env('MYSQLPORT'));
+$name = env('DB_NAME', env('MYSQLDATABASE'));
+$user = env('DB_USER', env('MYSQLUSER'));
+$password = env('DB_PASSWORD', env('MYSQLPASSWORD'));
 
-// Handle full connection URL (e.g., from Railway MYSQL_URL / MYSQL_PRIVATE_URL / MYSQL_PUBLIC_URL / DATABASE_URL)
-$dbUrl = env('MYSQL_URL', env('MYSQL_PRIVATE_URL', env('MYSQL_PUBLIC_URL', env('DATABASE_URL'))));
-if (!empty($dbUrl)) {
-    $parsedUrl = parse_url($dbUrl);
-    if (!empty($parsedUrl['host'])) $host = $parsedUrl['host'];
-    if (!empty($parsedUrl['port'])) $port = (string) $parsedUrl['port'];
-    if (!empty($parsedUrl['path'])) $name = ltrim($parsedUrl['path'], '/');
-    if (!empty($parsedUrl['user'])) $user = urldecode($parsedUrl['user']);
-    if (isset($parsedUrl['pass'])) $password = urldecode($parsedUrl['pass']);
+// If individual vars were not present, extract from URL string
+if (empty($host) || empty($user)) {
+    $dbUrl = env('MYSQL_URL', env('MYSQL_PRIVATE_URL', env('MYSQL_PUBLIC_URL', env('DATABASE_URL'))));
+    if (!empty($dbUrl)) {
+        if (preg_match('|^mysql://([^:]+):(.*)@([^:/]+)(?::(\d+))?/(.+)$|', $dbUrl, $matches)) {
+            $user = urldecode($matches[1]);
+            $password = urldecode($matches[2]);
+            $host = $matches[3];
+            $port = !empty($matches[4]) ? $matches[4] : ($port ?: '3306');
+            $name = explode('?', $matches[5])[0];
+        } else {
+            $parsedUrl = parse_url($dbUrl);
+            if (!empty($parsedUrl['host'])) $host = $parsedUrl['host'];
+            if (!empty($parsedUrl['port'])) $port = (string) $parsedUrl['port'];
+            if (!empty($parsedUrl['path'])) $name = ltrim($parsedUrl['path'], '/');
+            if (!empty($parsedUrl['user'])) $user = urldecode($parsedUrl['user']);
+            if (isset($parsedUrl['pass'])) $password = urldecode($parsedUrl['pass']);
+        }
+    }
 }
+
+// Fallbacks for local development
+$host = $host ?: '127.0.0.1';
+$port = $port ?: '3306';
+$name = $name ?: 'bw_store';
+$user = $user ?: 'root';
+$password = $password !== null ? $password : '';
 
 return [
     'host'      => $host,
