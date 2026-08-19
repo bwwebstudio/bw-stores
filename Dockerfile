@@ -28,6 +28,13 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         opcache \
         bcmath
 
+# Use production PHP settings
+RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini \
+    && echo "memory_limit=256M" >> /usr/local/etc/php/php.ini \
+    && echo "upload_max_filesize=64M" >> /usr/local/etc/php/php.ini \
+    && echo "post_max_size=64M" >> /usr/local/etc/php/php.ini \
+    && echo "max_execution_time=120" >> /usr/local/etc/php/php.ini
+
 # Enable Apache modules
 RUN a2enmod rewrite headers
 
@@ -37,13 +44,10 @@ COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy custom Apache site configuration
-COPY apache.conf /etc/apache2/sites-available/000-default.conf
-
 # Copy application files
 COPY . /var/www/html
 
-# Strip Windows CRLF line endings from shell scripts and entrypoints
+# Strip Windows CRLF line endings from shell scripts and make executable
 RUN sed -i 's/\r$//' /var/www/html/docker-entrypoint.sh /var/www/html/start.sh \
     && chmod +x /var/www/html/docker-entrypoint.sh /var/www/html/start.sh
 

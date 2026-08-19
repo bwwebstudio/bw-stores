@@ -72,7 +72,8 @@ for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
 
 if (!$connected || $pdo === null) {
     // If running in container / Railway startup, exit gracefully so container doesn't crash loop
-    if (getenv('PORT') || getenv('RAILWAY_ENVIRONMENT') || getenv('RAILWAY_STATIC_URL')) {
+    $isContainer = !empty($_SERVER['PORT']) || !empty($_ENV['PORT']) || getenv('PORT') || getenv('RAILWAY_ENVIRONMENT') || getenv('RAILWAY_STATIC_URL');
+    if ($isContainer) {
         echo "⚠ Warning: Database is not reachable yet. Skipping migrations for now so web server can boot.\n";
         exit(0);
     }
