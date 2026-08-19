@@ -14,9 +14,40 @@ use App\Middleware\RateLimitMiddleware;
 $router = $app->getRouter();
 
 // ─────────────────────────────────────────────
-// Public Marketing Landing Page
+// Public Marketing Landing Page & System Health
 // ─────────────────────────────────────────────
 $router->get('/', ['App\Controllers\Auth\HomeController', 'index'], 'home');
+
+$router->get('/health', function() use ($app) {
+    $dbStatus = 'disconnected';
+    $dbError = null;
+    $tables = [];
+    $vars = [
+        'MYSQLHOST'     => !empty(env('MYSQLHOST')),
+        'MYSQLPORT'     => env('MYSQLPORT', 'not set'),
+        'MYSQLDATABASE' => env('MYSQLDATABASE', 'not set'),
+        'MYSQLUSER'     => !empty(env('MYSQLUSER')),
+        'MYSQL_URL'     => !empty(env('MYSQL_URL')),
+        'DATABASE_URL'  => !empty(env('DATABASE_URL')),
+        'DB_HOST'       => env('DB_HOST', 'not set'),
+    ];
+    try {
+        $db = $app->getDatabase();
+        $dbStatus = 'connected';
+        $rawTables = $db->fetchAll("SHOW TABLES");
+        $tables = array_map(fn($r) => array_values($r)[0], $rawTables);
+    } catch (\Throwable $e) {
+        $dbError = $e->getMessage();
+    }
+    json_response([
+        'status'       => $dbStatus === 'connected' ? 'ok' : 'error',
+        'database'     => $dbStatus,
+        'error'        => $dbError,
+        'tables_count' => count($tables),
+        'tables'       => $tables,
+        'env_detected' => $vars,
+    ]);
+}, 'health');
 
 // ─────────────────────────────────────────────
 // Public Merchant Auth Routes
