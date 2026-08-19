@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# Determine Port (Default to 80 or 8080 if PORT is not set)
 PORT="${PORT:-80}"
 export PORT
 
@@ -10,14 +9,9 @@ echo " Starting BW Store SaaS on Railway..."
 echo " Configured Port: $PORT"
 echo "========================================="
 
-# Ensure dynamic port in Apache config
-if [ -f /etc/apache2/ports.conf ]; then
-    echo "Listen $PORT" > /etc/apache2/ports.conf
-fi
-
-if [ -f /etc/apache2/sites-available/000-default.conf ]; then
-    sed -i "s/<VirtualHost \*:.*>/<VirtualHost \*:$PORT>/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
-fi
+# Update Apache port listening to Railway's dynamic PORT
+echo "Listen $PORT" > /etc/apache2/ports.conf
+echo "ServerName localhost" >> /etc/apache2/apache2.conf 2>/dev/null || true
 
 # Ensure storage and upload directories exist with write permissions
 mkdir -p /var/www/html/storage/logs \

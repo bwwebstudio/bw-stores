@@ -43,14 +43,17 @@ COPY apache.conf /etc/apache2/sites-available/000-default.conf
 # Copy application files
 COPY . /var/www/html
 
+# Strip Windows CRLF line endings from shell scripts and entrypoints
+RUN sed -i 's/\r$//' /var/www/html/docker-entrypoint.sh /var/www/html/start.sh \
+    && chmod +x /var/www/html/docker-entrypoint.sh /var/www/html/start.sh
+
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
 # Prepare storage and uploads folders
 RUN mkdir -p storage/logs storage/cache storage/sessions public/uploads \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/public/uploads \
-    && chmod -R 777 /var/www/html/storage /var/www/html/public/uploads \
-    && chmod +x docker-entrypoint.sh start.sh
+    && chmod -R 777 /var/www/html/storage /var/www/html/public/uploads
 
 # Default port
 EXPOSE 80 8080
